@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Жуок</title>
+  <style type="text/css">
+    .wrapper {
+      width: 900px;
+      margin: 0 auto;
+    }
+
+    .wrapper div {
+      margin: 10px 0;
+    }
+
+    @media screen and (max-width: 900px) {
+      .wrapper {
+        width: calc(100% - 20px);
+      }
+
+      .wrapper div {
+        margin: 10px;
+      }
+    }
+
+    .header {
+      text-align: center;
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    .buttons {
+      display: flex;
+      flex-direction: row;
+    }
+
+    .button {
+      flex: 1;
+    }
+
+    .button button {
+      width: calc(100% - 20px);
+      margin: 10px;
+      font-size: 30px;
+    }
+
+    button#start {
+      background-color: chartreuse;
+      color: aliceblue;
+    }
+
+    button#stop {
+      background-color: coral;
+      color: aliceblue;
+    }
+  </style>
+  <script>
+
+    function generateFrequencies(f) {
+      const frequencies = [];
+      const i1 = 0.03;
+      const i2 = i1 * 2;
+      const i3 = i1 * 3;
+      const i4 = i1 * 4;
+      for (const i of [f, f + i1, f + i2, f + i3, f + i4, f - i1, f - i2, f - i3, f - i4]) {
+        for (const j of [i, 5 * i, 6 * i, 7 * i, 8 * i, 9 * i, 10 * i]) {
+          frequencies.push(j);
+        }
+      }
+      return frequencies;
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      let f = 50;
+      let volume = 9;
+      let frequencies = generateFrequencies(f);
+
+      // Добавление 63 (9 * 7) частот в массив
+
+      generateFrequencies(f);
+
+      const oscillators = [], gains = [];
+
+      const context = new AudioContext();
+      const start = document.getElementById("start");
+      const stop = document.getElementById("stop");
+      const volumeEl = document.getElementById("volume");
+      const freqEl = document.getElementById("freq");
+
+      start.addEventListener("click", function () {
+        for (let i = 0; i < frequencies.length; i++) {
+          const o = context.createOscillator();
+          o.frequency.value = frequencies[i];
+          const g = context.createGain();
+          o.connect(g);
+          g.connect(context.destination);
+          g.gain.value = (volume / 10) / frequencies.length;
+          o.start(0);
+          oscillators[i] = o;
+          gains[i] = g;
+        }
+        start.disabled = true;
+        stop.disabled = false;
+      });
+
+      stop.addEventListener("click", function () {
+        for (let i = 0; i < frequencies.length; i++) {
+          gains[i].gain.exponentialRampToValueAtTime(
+                  0.00001, context.currentTime + 0.2
+          );
+          oscillators[i].stop(context.currentTime + 0.4);
+        }
+        start.disabled = false;
+        stop.disabled = true;
+      });
+
+      freqEl.addEventListener("input", function (event) {
+        f = Number.parseInt(event.target.value);
+        frequencies = generateFrequencies(f);
+        for (let i = 0; i < frequencies.length; i++) {
+          oscillators[i].frequency.value = frequencies[i];
+        }
+      });
+
+      volumeEl.addEventListener("input", function (event) {
+        volume = Number.parseInt(event.target.value);
+        for (let i = 0; i < frequencies.length; i++) {
+          gains[i].gain.exponentialRampToValueAtTime(
+                  (volume / 10) / frequencies.length, context.currentTime + 0.1
+          );
+        }
+      });
+
+    });
+  </script>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <h1>
+        Жуок
+      </h1>
+    </div>
+    <div class="block">
+      <div class="buttons">
+        <div class="button">
+          <button id="start">start</button>
+        </div>
+        <div class="button">
+          <button id="stop" disabled>stop</button>
+        </div>
+      </div>
+    </div>
+    <div class="block">
+      <p>
+        Базовая частота
+      </p>
+      <input id="freq" type="range" max="100" min="1" value="50"/>
+    </div>
+    <div class="block">
+      <p>
+        Громкость
+      </p>
+      <input id="volume" type="range" max="13" min="0" value="9"/>
+    </div>
+    <div class="block">
+      <p><b>Объяснение:</b></p>
+      <p>Для генерации звука используется
+        <a href="https://ru.wikipedia.org/wiki/%D0%A2%D0%BE%D0%BD_%D0%A8%D0%B5%D0%BF%D0%B0%D1%80%D0%B4%D0%B0">
+          непрерывный ряд Рисе
+        </a>.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
